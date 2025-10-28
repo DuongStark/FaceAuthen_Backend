@@ -1,0 +1,105 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  uid         String   @id @default(uuid())
+  email       String   @unique
+  passwordHash String   @map("password_hash")
+  displayName String   @map("display_name")
+  role        Role
+  classes     Class[]
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Class {
+  id          String    @id @default(uuid())
+  lecturerId  String    @map("lecturer_id")
+  lecturer    User      @relation(fields: [lecturerId], references: [uid], onDelete: Cascade)
+  name        String
+  code        String?
+  description String?
+  students    Student[]
+  sessions    Session[]
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([lecturerId])
+  @@map("classes")
+}
+
+model Student {
+  id        String   @id @default(uuid())
+  classId   String   @map("class_id")
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  studentId String   @map("student_id")
+  name      String
+  email     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  faceDescriptors FaceDescriptor[]
+  attendances     Attendance[]
+
+  @@unique([classId, studentId])
+  @@index([classId])
+  @@index([classId, studentId])
+  @@map("students")
+}
+
+model FaceDescriptor {
+  id        String   @id @default(uuid())
+  studentId String   @map("student_id")
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  descriptor Json     // Store array of numbers [float, float, ...]
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([studentId])
+  @@map("face_descriptors")
+}
+
+model Session {
+  id          String      @id @default(uuid())
+  classId     String      @map("class_id")
+  class       Class       @relation(fields: [classId], references: [id], onDelete: Cascade)
+  createdBy   String      @map("created_by")
+  startAt     DateTime    @map("start_at")
+  endAt       DateTime?   @map("end_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  attendances Attendance[]
+
+  @@index([classId])
+  @@index([classId, startAt])
+  @@map("sessions")
+}
+
+model Attendance {
+  id        String    @id @default(uuid())
+  sessionId String    @map("session_id")
+  session   Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  studentId String    @map("student_id")
+  student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  method    String    // 'face' | 'manual'
+  matchedAt DateTime  @map("matched_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([sessionId, matchedAt])
+  @@index([sessionId, studentId, matchedAt])
+  @@map("attendance")
+}
+
+enum Role {
+  lecturer
+  student
+  admin
+}
