@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: faceauthen-backend
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 22.16.0
+      - key: DATABASE_URL
+        sync: false
