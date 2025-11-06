@@ -10,14 +10,14 @@ http://localhost:3000
 ## Test với Swagger UI (Recommended)
 
 1. Start server: `npm run dev`
-2. Mở browser: `http://localhost:3000/api/api-docs`
+2. Mở browser: `http://localhost:3000/api-docs`
 3. Test trực tiếp trên Swagger UI
 
 ## Test với cURL hoặc Postman
 
-### 1. Đăng ký (POST /api/auth/register)
+### 1. Đăng ký (POST /auth/register)
 ```bash
-curl -X POST http://localhost:3000/api/auth/register \
+curl -X POST http://localhost:3000/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test@example.com",
@@ -40,9 +40,9 @@ curl -X POST http://localhost:3000/api/auth/register \
 }
 ```
 
-### 2. Đăng nhập (POST /api/auth/login)
+### 2. Đăng nhập (POST /auth/login)
 ```bash
-curl -X POST http://localhost:3000/api/auth/login \
+curl -X POST http://localhost:3000/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "lecturer@uni.edu",
@@ -64,15 +64,15 @@ curl -X POST http://localhost:3000/api/auth/login \
 }
 ```
 
-### 3. Lấy thông tin user (GET /api/auth/me)
+### 3. Lấy thông tin user (GET /auth/me)
 ```bash
-curl -X GET http://localhost:3000/api/auth/me \
+curl -X GET http://localhost:3000/auth/me \
   -H "Authorization: Bearer YOUR_TOKEN_HERE"
 ```
 
-### 4. Đăng xuất (POST /api/auth/logout)
+### 4. Đăng xuất (POST /auth/logout)
 ```bash
-curl -X POST http://localhost:3000/api/auth/logout \
+curl -X POST http://localhost:3000/auth/logout \
   -H "Authorization: Bearer YOUR_TOKEN_HERE"
 ```
 
@@ -89,7 +89,7 @@ curl -X POST http://localhost:3000/api/auth/logout \
 ## Troubleshooting
 
 ### 404 Not Found
-- Kiểm tra URL đúng: `/api/auth/register` (có `/api` prefix)
+- Kiểm tra URL đúng: `/auth/register` (không có `/api` prefix)
 - Kiểm tra server đang chạy: `http://localhost:3000`
 - Kiểm tra routes trong `src/routes/index.ts`
 

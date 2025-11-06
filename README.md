@@ -45,7 +45,7 @@ npm run dev
 ```
 
 - API: http://localhost:3000
-- Docs: http://localhost:3000/api/api-docs
+- Docs: http://localhost:3000/api-docs
 - Login: `lecturer@uni.edu` / `lecturer123`
 
 ## Commands
@@ -68,26 +68,26 @@ SV002,Tran Thi B,sv002@student.uni.edu
 ## API
 
 ### Auth
-- `POST /api/auth/register` - Đăng ký
-- `POST /api/auth/login` - Đăng nhập
-- `GET /api/auth/me` - Thông tin user
-- `POST /api/auth/logout` - Đăng xuất
+- `POST /auth/register` - Đăng ký
+- `POST /auth/login` - Đăng nhập
+- `GET /auth/me` - Thông tin user
+- `POST /auth/logout` - Đăng xuất
 
 ### Faces
-- `POST /api/faces/upload` - Upload face descriptor
-- `GET /api/faces/gallery/:classId` - Lấy gallery
+- `POST /faces/upload` - Upload face descriptor
+- `GET /faces/gallery/:classId` - Lấy gallery
 
 ### Sessions
-- `POST /api/sessions/start` - Mở phiên
-- `POST /api/sessions/:id/end` - Đóng phiên
-- `GET /api/sessions/active/:classId` - Lấy phiên đang mở
+- `POST /sessions/start` - Mở phiên
+- `POST /sessions/:id/end` - Đóng phiên
+- `GET /sessions/active/:classId` - Lấy phiên đang mở
 
 ### Attendance
-- `POST /api/attendance/record` - Ghi điểm danh
-- `GET /api/attendance/:sessionId` - Danh sách điểm danh
-- `GET /api/attendance/:sessionId/subscribe` - Subscribe realtime
+- `POST /attendance/record` - Ghi điểm danh
+- `GET /attendance/:sessionId` - Danh sách điểm danh
+- `GET /attendance/:sessionId/subscribe` - Subscribe realtime
 
-Xem full docs tại `/api/api-docs`.
+Xem full docs tại `/api-docs`.
 
 Xem chi tiết: [API_ATTENDANCE.md](./API_ATTENDANCE.md)
 

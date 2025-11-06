@@ -27,8 +27,10 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `http://localhost:${PORT}/api`,
-        description: 'Development server',
+        url: process.env.NODE_ENV === 'production' 
+          ? 'https://faceauthen-backend.onrender.com'
+          : `http://localhost:${PORT}`,
+        description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
       },
     ],
     components: {
@@ -50,9 +52,8 @@ const swaggerOptions = {
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
-app.use('/api/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Health check
+// Health check (phải đặt trước api-docs)
 app.get('/', (req, res) => {
   res.json({
     message: 'Education Management API',
@@ -61,8 +62,11 @@ app.get('/', (req, res) => {
   });
 });
 
-// API routes
-app.use('/api', apiRoutes);
+// Swagger docs
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// API routes (bỏ prefix /api)
+app.use('/', apiRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
