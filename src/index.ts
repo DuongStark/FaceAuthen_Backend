@@ -27,10 +27,8 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: process.env.NODE_ENV === 'production' 
-          ? 'https://faceauthen-backend.onrender.com'
-          : `http://localhost:${PORT}`,
-        description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
+        url: process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`,
+        description: process.env.RENDER_EXTERNAL_URL ? 'Production server' : 'Development server',
       },
     ],
     components: {
