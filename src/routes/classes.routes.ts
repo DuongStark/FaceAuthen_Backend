@@ -7,6 +7,7 @@ import {
   deleteClass,
   importStudents,
 } from '../controllers/classes.controller';
+import { importStudentsFromCSV } from '../controllers/csv.controller';
 import { requireAuth, requireLecturer } from '../middlewares/auth.middleware';
 
 const router = express.Router();
