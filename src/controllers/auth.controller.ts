@@ -108,6 +108,27 @@ export const login = async (req: Request, res: Response) => {
       { expiresIn: '24h' }
     );
 
+    // Check if user is a student and get their student records
+    let studentRecords = null;
+    if (user.role === 'student') {
+      studentRecords = await prisma.student.findMany({
+        where: { email: user.email },
+        select: {
+          id: true,
+          studentId: true,
+          name: true,
+          classId: true,
+          class: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
+        },
+      });
+    }
+
     res.json({
       message: 'Login successful',
       token,
@@ -117,6 +138,7 @@ export const login = async (req: Request, res: Response) => {
         displayName: user.displayName,
         role: user.role,
       },
+      studentInfo: studentRecords && studentRecords.length > 0 ? studentRecords : null,
     });
   } catch (error: any) {
     console.error('Login error:', error);
@@ -149,7 +171,31 @@ export const me = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json(user);
+    // Check if user is a student and get their student records
+    let studentRecords = null;
+    if (user.role === 'student') {
+      studentRecords = await prisma.student.findMany({
+        where: { email: user.email },
+        select: {
+          id: true,
+          studentId: true,
+          name: true,
+          classId: true,
+          class: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
+        },
+      });
+    }
+
+    res.json({
+      ...user,
+      studentInfo: studentRecords && studentRecords.length > 0 ? studentRecords : null,
+    });
   } catch (error: any) {
     console.error('Me error:', error);
     res.status(500).json({ error: 'Internal server error' });
