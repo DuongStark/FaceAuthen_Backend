@@ -14,8 +14,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({
   origin: '*', // Allow all origins, hoặc specify ['http://localhost:3000', 'https://yourdomain.com']
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Middleware
