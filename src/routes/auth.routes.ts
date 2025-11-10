@@ -58,8 +58,31 @@ const router = express.Router();
  *     responses:
  *       201:
  *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: User registered successfully
+ *                 uid:
+ *                   type: string
+ *                   example: 550e8400-e29b-41d4-a716-446655440000
+ *             example:
+ *               message: User registered successfully
+ *               uid: 550e8400-e29b-41d4-a716-446655440000
  *       400:
  *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *             example:
+ *               error: Email already exists
  */
 router.post('/register', register);
 
@@ -81,13 +104,57 @@ router.post('/register', register);
  *             properties:
  *               email:
  *                 type: string
+ *                 example: lecturer@uni.edu
  *               password:
  *                 type: string
+ *                 example: lecturer123
  *     responses:
  *       200:
  *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 token:
+ *                   type: string
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     uid:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     displayName:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                 studentInfo:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *             example:
+ *               message: Login successful
+ *               token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *               user:
+ *                 uid: 550e8400-e29b-41d4-a716-446655440000
+ *                 email: lecturer@uni.edu
+ *                 displayName: Dr. Smith
+ *                 role: lecturer
+ *               studentInfo: []
  *       401:
  *         description: Invalid credentials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *             example:
+ *               error: Invalid credentials
  */
 router.post('/login', login);
 
@@ -102,8 +169,50 @@ router.post('/login', login);
  *     responses:
  *       200:
  *         description: Current user info
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     uid:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     displayName:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                     createdAt:
+ *                       type: string
+ *                 studentInfo:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *             example:
+ *               user:
+ *                 uid: 550e8400-e29b-41d4-a716-446655440000
+ *                 email: annv.b21dccn001@stu.ptit.edu.vn
+ *                 displayName: Nguyễn Văn An
+ *                 role: student
+ *                 createdAt: "2024-01-15T10:30:00.000Z"
+ *               studentInfo:
+ *                 - id: abc-123
+ *                   studentId: B21DCCN001
+ *                   name: Nguyễn Văn An
+ *                   email: annv.b21dccn001@stu.ptit.edu.vn
+ *                   class:
+ *                     id: class-xyz
+ *                     name: Lập trình web
+ *                     code: IT4409
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: Unauthorized
  */
 router.get('/me', requireAuth, me);
 

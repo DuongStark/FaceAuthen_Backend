@@ -31,13 +31,21 @@ const router = express.Router();
  *             properties:
  *               name:
  *                 type: string
+ *                 example: Lập trình web
  *               code:
  *                 type: string
+ *                 example: IT4409
  *               description:
  *                 type: string
+ *                 example: Môn học lập trình web cho sinh viên năm 3
  *     responses:
  *       201:
  *         description: Class created successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: Class created successfully
+ *               id: class-uuid-123
  */
 router.post('/', requireAuth, requireLecturer, createClass);
 
@@ -52,6 +60,18 @@ router.post('/', requireAuth, requireLecturer, createClass);
  *     responses:
  *       200:
  *         description: List of classes
+ *         content:
+ *           application/json:
+ *             example:
+ *               - id: class-uuid-123
+ *                 name: Lập trình web
+ *                 code: IT4409
+ *                 description: Môn học lập trình web
+ *                 lecturerId: lecturer-uuid
+ *                 _count:
+ *                   students: 40
+ *                   sessions: 5
+ *                 createdAt: "2024-01-15T10:30:00.000Z"
  */
 router.get('/', requireAuth, getClasses);
 
@@ -67,9 +87,32 @@ router.get('/', requireAuth, getClasses);
  *         required: true
  *         schema:
  *           type: string
+ *         example: class-uuid-123
  *     responses:
  *       200:
  *         description: Class details
+ *         content:
+ *           application/json:
+ *             example:
+ *               id: class-uuid-123
+ *               name: Lập trình web
+ *               code: IT4409
+ *               description: Môn học lập trình web
+ *               lecturerId: lecturer-uuid
+ *               students:
+ *                 - id: student-uuid-1
+ *                   studentId: B21DCCN001
+ *                   name: Nguyễn Văn An
+ *                   email: annv.b21dccn001@stu.ptit.edu.vn
+ *               _count:
+ *                 students: 40
+ *                 sessions: 5
+ *       404:
+ *         description: Class not found
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: Class not found
  */
 router.get('/:id', getClass);
 
