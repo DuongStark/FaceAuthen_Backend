@@ -139,7 +139,7 @@ export const listAttendance = async (req: Request, res: Response) => {
       },
     });
 
-    res.json(attendances.map((a) => ({
+    res.json(attendances.map((a: any) => ({
       id: a.id,
       studentId: a.student.studentId,
       studentName: a.student.name,

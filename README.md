@@ -13,6 +13,7 @@ Backend API với PostgreSQL, Prisma ORM, và Swagger UI.
 - ✅ Attendance Tracking
 - 🔄 Realtime Updates (SSE)
 - 🛡️ Anti-Duplicate Protection
+- 🌐 **School Network IP Check** (chỉ cho phép điểm danh từ wifi trường)
 - 📖 Swagger documentation
 
 ## Quick Start
@@ -104,3 +105,4 @@ Xem chi tiết: [API_ATTENDANCE.md](./API_ATTENDANCE.md)
 
 - [API_TEST.md](./API_TEST.md) - API Testing Guide
 - [API_ATTENDANCE.md](./API_ATTENDANCE.md) - Faces & Attendance Guide
+- [IP_CONFIG_GUIDE.md](./IP_CONFIG_GUIDE.md) - **School Network IP Configuration** 🆕

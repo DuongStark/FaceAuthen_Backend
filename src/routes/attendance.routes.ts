@@ -1,6 +1,7 @@
 import express from 'express';
 import { recordAttendance, listAttendance, subscribeAttendance } from '../controllers/attendance.controller';
 import { requireAuth } from '../middlewares/auth.middleware';
+import { checkSchoolNetwork } from '../middlewares/ip-check.middleware';
 
 const router = express.Router();
 
@@ -58,8 +59,16 @@ const router = express.Router();
  *             example:
  *               error: Duplicate attendance detected
  *               message: Attendance was recorded 45 seconds ago. Please wait at least 120 seconds.
+ *       403:
+ *         description: Unauthorized network
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: Unauthorized network
+ *               message: Bạn chỉ có thể điểm danh khi sử dụng wifi của trường
+ *               clientIp: "192.168.0.100"
  */
-router.post('/record', requireAuth, recordAttendance);
+router.post('/record', requireAuth, checkSchoolNetwork, recordAttendance);
 
 /**
  * @swagger
