@@ -24,21 +24,64 @@ const router = express.Router();
  *               classId:
  *                 type: string
  *                 example: class-uuid-123
+ *               scheduleSessionId:
+ *                 type: string
+ *                 example: schedule-session-uuid-456
+ *                 description: Optional - ID của buổi học trong lịch. Nếu có thì session sẽ được link với buổi học đó.
  *     responses:
  *       201:
  *         description: Session started successfully
  *         content:
  *           application/json:
- *             example:
- *               message: Session started successfully
- *               id: session-uuid-abc
- *               startAt: "2024-01-15T14:30:00.000Z"
+ *             examples:
+ *               withScheduleSession:
+ *                 summary: Session with schedule
+ *                 value:
+ *                   message: Session started successfully
+ *                   session:
+ *                     id: session-uuid-abc
+ *                     classId: class-uuid-123
+ *                     scheduleSessionId: schedule-session-uuid-456
+ *                     startAt: "2024-01-15T14:30:00.000Z"
+ *                     class:
+ *                       id: class-uuid-123
+ *                       name: Lập Trình Cơ Bản
+ *                       code: IT101
+ *                     scheduleSession:
+ *                       id: schedule-session-uuid-456
+ *                       sessionName: Buổi 5
+ *                       sessionDate: "2024-01-15T00:00:00.000Z"
+ *               withoutScheduleSession:
+ *                 summary: Session without schedule
+ *                 value:
+ *                   message: Session started successfully
+ *                   session:
+ *                     id: session-uuid-abc
+ *                     classId: class-uuid-123
+ *                     scheduleSessionId: null
+ *                     startAt: "2024-01-15T14:30:00.000Z"
+ *                     class:
+ *                       id: class-uuid-123
+ *                       name: Lập Trình Cơ Bản
+ *                       code: IT101
  *       400:
  *         description: Validation error or active session exists
  *         content:
  *           application/json:
+ *             examples:
+ *               activeSessionExists:
+ *                 value:
+ *                   error: There is already an active session for this class
+ *               sessionAlreadyLinked:
+ *                 value:
+ *                   error: This schedule session already has an attendance session
+ *                   existingSessionId: session-uuid-xyz
+ *       404:
+ *         description: Schedule session not found
+ *         content:
+ *           application/json:
  *             example:
- *               error: There is already an active session for this class
+ *               error: Schedule session not found
  */
 router.post('/start', requireAuth, requireLecturer, startSession);
 

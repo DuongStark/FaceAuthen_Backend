@@ -15,7 +15,7 @@ interface AuthRequest extends Request {
  */
 export const startSession = async (req: AuthRequest, res: Response) => {
   try {
-    const { classId } = req.body;
+    const { classId, scheduleSessionId } = req.body;
     const userId = req.user?.uid;
 
     if (!classId) {
@@ -38,10 +38,48 @@ export const startSession = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'There is already an active session for this class' });
     }
 
+    // If scheduleSessionId is provided, verify it exists and belongs to this class
+    if (scheduleSessionId) {
+      const scheduleSession = await prisma.scheduleSession.findUnique({
+        where: { id: scheduleSessionId },
+        include: {
+          schedule: {
+            select: {
+              classId: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      if (!scheduleSession) {
+        return res.status(404).json({ error: 'Schedule session not found' });
+      }
+
+      if (scheduleSession.schedule.classId !== classId) {
+        return res.status(400).json({ error: 'Schedule session does not belong to this class' });
+      }
+
+      // Check if this schedule session already has an attendance session
+      const existingSession = await prisma.session.findFirst({
+        where: {
+          scheduleSessionId,
+        },
+      });
+
+      if (existingSession) {
+        return res.status(400).json({ 
+          error: 'This schedule session already has an attendance session',
+          existingSessionId: existingSession.id,
+        });
+      }
+    }
+
     // Create new session
     const session = await prisma.session.create({
       data: {
         classId,
+        scheduleSessionId: scheduleSessionId || null,
         createdBy: userId,
         startAt: new Date(),
       },
@@ -53,6 +91,13 @@ export const startSession = async (req: AuthRequest, res: Response) => {
             code: true,
           },
         },
+        scheduleSession: scheduleSessionId ? {
+          select: {
+            id: true,
+            sessionName: true,
+            sessionDate: true,
+          },
+        } : undefined,
       },
     });
 
