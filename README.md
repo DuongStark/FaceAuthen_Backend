@@ -106,3 +106,4 @@ Xem chi tiết: [API_ATTENDANCE.md](./API_ATTENDANCE.md)
 - [API_TEST.md](./API_TEST.md) - API Testing Guide
 - [API_ATTENDANCE.md](./API_ATTENDANCE.md) - Faces & Attendance Guide
 - [IP_CONFIG_GUIDE.md](./IP_CONFIG_GUIDE.md) - **School Network IP Configuration** 🆕
+- [SCHEDULE_API_GUIDE.md](./SCHEDULE_API_GUIDE.md) - **Schedule & Statistics API** 🆕

@@ -24,16 +24,17 @@ model User {
 }
 
 model Class {
-  id          String    @id @default(uuid())
-  lecturerId  String    @map("lecturer_id")
-  lecturer    User      @relation(fields: [lecturerId], references: [uid], onDelete: Cascade)
+  id          String     @id @default(uuid())
+  lecturerId  String     @map("lecturer_id")
+  lecturer    User       @relation(fields: [lecturerId], references: [uid], onDelete: Cascade)
   name        String
   code        String?
   description String?
   students    Student[]
   sessions    Session[]
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  schedules   Schedule[] // Thêm relation cho lịch học
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
 
   @@index([lecturerId])
   @@map("classes")
@@ -69,18 +70,62 @@ model FaceDescriptor {
 }
 
 model Session {
-  id          String      @id @default(uuid())
-  classId     String      @map("class_id")
-  class       Class       @relation(fields: [classId], references: [id], onDelete: Cascade)
-  createdBy   String      @map("created_by")
-  startAt     DateTime    @map("start_at")
-  endAt       DateTime?   @map("end_at")
-  createdAt   DateTime    @default(now()) @map("created_at")
-  attendances Attendance[]
+  id                String           @id @default(uuid())
+  classId           String           @map("class_id")
+  class             Class            @relation(fields: [classId], references: [id], onDelete: Cascade)
+  scheduleSessionId String?          @map("schedule_session_id") // Link to scheduled session
+  scheduleSession   ScheduleSession? @relation(fields: [scheduleSessionId], references: [id], onDelete: SetNull)
+  createdBy         String           @map("created_by")
+  startAt           DateTime         @map("start_at")
+  endAt             DateTime?        @map("end_at")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  attendances       Attendance[]
 
   @@index([classId])
   @@index([classId, startAt])
+  @@index([scheduleSessionId])
   @@map("sessions")
+}
+
+// Lịch học (Schedule) - Ví dụ: Môn Toán, thứ 2-4-6, từ 7h-9h
+model Schedule {
+  id               String            @id @default(uuid())
+  classId          String            @map("class_id")
+  class            Class             @relation(fields: [classId], references: [id], onDelete: Cascade)
+  name             String            // Tên lịch học, VD: "Học kỳ 1 2024-2025"
+  startDate        DateTime          @map("start_date") // Ngày bắt đầu học kỳ
+  endDate          DateTime          @map("end_date")   // Ngày kết thúc học kỳ
+  daysOfWeek       Int[]             @map("days_of_week") // [1,3,5] = thứ 2,4,6 (0=CN, 1=T2, ..., 6=T7)
+  startTime        String            @map("start_time") // "07:00"
+  endTime          String            @map("end_time")   // "09:00"
+  room             String?           // Phòng học
+  description      String?
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  scheduleSessions ScheduleSession[] // Các buổi học cụ thể
+
+  @@index([classId])
+  @@index([startDate, endDate])
+  @@map("schedules")
+}
+
+// Buổi học cụ thể (ScheduleSession) - Ví dụ: Buổi 1 - 15/01/2025
+model ScheduleSession {
+  id          String       @id @default(uuid())
+  scheduleId  String       @map("schedule_id")
+  schedule    Schedule     @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  sessionDate DateTime     @map("session_date") // Ngày học cụ thể
+  sessionName String       @map("session_name") // "Buổi 1", "Buổi 2", ...
+  status      SessionStatus @default(SCHEDULED) // SCHEDULED, COMPLETED, CANCELLED
+  note        String?      // Ghi chú
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  sessions    Session[]    // Các session điểm danh thực tế
+
+  @@index([scheduleId])
+  @@index([sessionDate])
+  @@index([scheduleId, sessionDate])
+  @@map("schedule_sessions")
 }
 
 model Attendance {
@@ -102,4 +147,10 @@ enum Role {
   lecturer
   student
   admin
+}
+
+enum SessionStatus {
+  SCHEDULED  // Đã lên lịch
+  COMPLETED  // Đã hoàn thành
+  CANCELLED  // Đã hủy
 }

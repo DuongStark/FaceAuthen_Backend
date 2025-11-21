@@ -1,12 +1,27 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import fs from 'fs';
+import path from 'path';
 
 const prisma = new PrismaClient();
 
+// Danh sách họ và tên tiếng Việt
+const lastNames = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Huỳnh', 'Phan', 'Vũ', 'Võ', 'Đặng', 'Bùi', 'Đỗ', 'Hồ', 'Ngô', 'Dương'];
+const middleNames = ['Văn', 'Thị', 'Hữu', 'Đức', 'Minh', 'Anh', 'Tuấn', 'Quốc', 'Thanh', 'Hồng', 'Kim', 'Phương'];
+const firstNames = ['An', 'Bình', 'Chi', 'Dũng', 'Hà', 'Hùng', 'Khánh', 'Linh', 'Mai', 'Nam', 'Phong', 'Quân', 'Sơn', 'Tâm', 'Tú', 'Uyên', 'Việt', 'Xuân', 'Yến', 'Đạt'];
+
+function generateRandomName(): string {
+  const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+  const middleName = middleNames[Math.floor(Math.random() * middleNames.length)];
+  const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+  return `${lastName} ${middleName} ${firstName}`;
+}
+
 async function main() {
-  console.log('Starting database seed...');
+  console.log('🌱 Starting database seed...\n');
 
   // Create lecturer account
+  console.log('👨‍🏫 Creating lecturer account...');
   const lecturerPassword = 'lecturer123';
   const passwordHash = await bcrypt.hash(lecturerPassword, 10);
   
@@ -16,104 +31,149 @@ async function main() {
     create: {
       email: 'lecturer@uni.edu',
       passwordHash,
-      displayName: 'Dr. John Smith',
+      displayName: 'Giảng Viên Nguyễn Văn A',
       role: 'lecturer',
     },
   });
 
-  console.log('✓ Lecturer account: lecturer@uni.edu');
-  console.log('  Password: lecturer123');
+  console.log('✓ Lecturer: lecturer@uni.edu / lecturer123\n');
 
-  // Create a sample class
-  const sampleClass = await prisma.class.upsert({
-    where: { id: 'class-001' },
-    update: {},
-    create: {
-      id: 'class-001',
-      lecturerId: lecturer.uid,
-      name: 'Introduction to Computer Science',
-      code: 'CS101',
-      description: 'Basic concepts of programming and software development',
-    },
-  });
-
-  console.log('✓ Sample class: CS101');
-
-  // Create sample students
-  const sampleStudents = [
-    { studentId: 'SV001', name: 'Nguyen Van A', email: 'sv001@student.uni.edu' },
-    { studentId: 'SV002', name: 'Tran Thi B', email: 'sv002@student.uni.edu' },
-    { studentId: 'SV003', name: 'Le Van C', email: 'sv003@student.uni.edu' },
-    { studentId: 'SV004', name: 'Pham Thi D', email: 'sv004@student.uni.edu' },
-    { studentId: 'SV005', name: 'Hoang Van E', email: 'sv005@student.uni.edu' },
+  // Create 3 classes
+  const classes = [
+    { code: 'IT101', name: 'Lập Trình Cơ Bản', description: 'Môn học về lập trình căn bản' },
+    { code: 'IT201', name: 'Cấu Trúc Dữ Liệu và Giải Thuật', description: 'Môn học về CTDL & GT' },
+    { code: 'IT301', name: 'Lập Trình Web', description: 'Môn học về phát triển ứng dụng web' },
   ];
 
-  for (const student of sampleStudents) {
-    await prisma.student.upsert({
-      where: {
-        classId_studentId: {
-          classId: sampleClass.id,
-          studentId: student.studentId,
-        },
-      },
-      update: {},
-      create: {
-        classId: sampleClass.id,
-        studentId: student.studentId,
-        name: student.name,
-        email: student.email,
+  console.log('📚 Creating classes...');
+  const createdClasses = [];
+  for (const classData of classes) {
+    const newClass = await prisma.class.create({
+      data: {
+        lecturerId: lecturer.uid,
+        name: classData.name,
+        code: classData.code,
+        description: classData.description,
       },
     });
+    createdClasses.push(newClass);
+    console.log(`✓ Class: ${classData.code} - ${classData.name}`);
   }
 
-  console.log(`✓ Created ${sampleStudents.length} sample students`);
+  console.log('\n👥 Creating students...');
   
-  // Create face descriptors for sample students
-  let descriptorCount = 0;
-  for (const student of sampleStudents) {
-    const studentRecord = await prisma.student.findFirst({
-      where: { studentId: student.studentId },
+  // Read CSV file nếu có
+  let csvStudents: any[] = [];
+  const csvPath = path.join(process.cwd(), 'sample_students.csv');
+  if (fs.existsSync(csvPath)) {
+    const csvContent = fs.readFileSync(csvPath, 'utf-8');
+    const lines = csvContent.split('\n').slice(1); // Skip header
+    csvStudents = lines
+      .filter(line => line.trim())
+      .map(line => {
+        const [studentId, name, email] = line.split(',').map(s => s.trim());
+        return { studentId, name, email };
+      });
+    console.log(`✓ Loaded ${csvStudents.length} students from CSV`);
+  }
+
+  let totalStudentsCreated = 0;
+
+  // Distribute CSV students across classes
+  if (csvStudents.length > 0) {
+    const studentPassword = await bcrypt.hash('password123', 10);
+    
+    for (let i = 0; i < csvStudents.length && i < 40; i++) {
+      const student = csvStudents[i];
+      const classIndex = Math.floor(i / 13); // Distribute evenly
+      const targetClass = createdClasses[Math.min(classIndex, createdClasses.length - 1)];
+      
+      // Create student record
+      await prisma.student.create({
+        data: {
+          classId: targetClass.id,
+          studentId: student.studentId,
+          name: student.name,
+          email: student.email,
+        },
+      });
+      
+      // Create user account for CSV student
+      await prisma.user.create({
+        data: {
+          email: student.email,
+          passwordHash: studentPassword,
+          displayName: student.name,
+          role: 'student',
+        },
+      });
+      
+      totalStudentsCreated++;
+    }
+    console.log(`✓ Added ${Math.min(csvStudents.length, 40)} students from CSV`);
+  }
+
+  // Generate additional students to make 40 per class
+  console.log('✓ Generating additional students...');
+  let studentIdCounter = 1001;
+  const studentPassword = await bcrypt.hash('password123', 10);
+  
+  for (const targetClass of createdClasses) {
+    const existingCount = await prisma.student.count({
+      where: { classId: targetClass.id },
     });
     
-    if (studentRecord) {
-      // Create 2 dummy descriptors per student for testing
-      for (let i = 0; i < 2; i++) {
-        await prisma.faceDescriptor.upsert({
-          where: {
-            id: `desc-${student.studentId}-${i}`,
-          },
-          update: {},
-          create: {
-            id: `desc-${student.studentId}-${i}`,
-            studentId: studentRecord.id,
-            descriptor: [
-              0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0,
-              1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0,
-              // Dummy descriptor values
-            ],
-          },
-        });
-        descriptorCount++;
-      }
+    const needed = 40 - existingCount;
+    
+    for (let i = 0; i < needed; i++) {
+      const studentId = `D23DCCN${String(studentIdCounter).padStart(3, '0')}`;
+      const name = generateRandomName();
+      const email = `${studentId.toLowerCase()}@stu.ptit.edu.vn`;
+      
+      // Create student record
+      await prisma.student.create({
+        data: {
+          classId: targetClass.id,
+          studentId,
+          name,
+          email,
+        },
+      });
+      
+      // Create user account for student
+      await prisma.user.create({
+        data: {
+          email,
+          passwordHash: studentPassword,
+          displayName: name,
+          role: 'student',
+        },
+      });
+      
+      studentIdCounter++;
+      totalStudentsCreated++;
     }
+    
+    console.log(`✓ Class ${targetClass.code}: 40 students (${needed} generated)`);
   }
+
+  console.log(`\n✅ Total students created: ${totalStudentsCreated}`);
+  console.log(`✅ Total user accounts created: ${totalStudentsCreated + 1} (including lecturer)`);
+  console.log(`✅ Total classes: ${createdClasses.length}`);
   
-  console.log(`✓ Created ${descriptorCount} face descriptors`);
-  
-  // Create a test student account
-  const studentPassword = await bcrypt.hash('student123', 10);
-  await prisma.user.upsert({
-    where: { email: 'student@uni.edu' },
-    update: {},
-    create: {
-      email: 'student@uni.edu',
-      passwordHash: studentPassword,
-      displayName: 'Test Student',
-      role: 'student',
-    },
-  });
-  
-  console.log('\nSeed completed successfully!');
+  console.log('\n📊 Summary:');
+  console.log('═══════════════════════════════════');
+  console.log('👨‍🏫 Lecturer: lecturer@uni.edu / lecturer123');
+  console.log(`📚 Classes: ${createdClasses.length}`);
+  for (const cls of createdClasses) {
+    const count = await prisma.student.count({ where: { classId: cls.id } });
+    console.log(`   - ${cls.code}: ${count} students`);
+  }
+  console.log(`👥 Total Students: ${totalStudentsCreated}`);
+  console.log(`🔑 Student Password: password123`);
+  console.log(`📧 Student Email Format: d23dccn001@stu.ptit.edu.vn`);
+  console.log('═══════════════════════════════════');
+  console.log('\n🎉 Seed completed successfully!');
 }
 
 main()
