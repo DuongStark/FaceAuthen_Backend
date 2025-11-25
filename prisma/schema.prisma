@@ -17,6 +17,7 @@ model User {
   displayName String   @map("display_name")
   role        Role
   classes     Class[]
+  notifications Notification[]
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -143,6 +144,23 @@ model Attendance {
   @@map("attendance")
 }
 
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String           @map("user_id") // Student's user ID
+  user      User             @relation(fields: [userId], references: [uid], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?            // Additional data (scheduleId, classId, etc.)
+  isRead    Boolean          @default(false) @map("is_read")
+  createdAt DateTime         @default(now()) @map("created_at")
+  readAt    DateTime?        @map("read_at")
+
+  @@index([userId, createdAt])
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
 enum Role {
   lecturer
   student
@@ -153,4 +171,13 @@ enum SessionStatus {
   SCHEDULED  // Đã lên lịch
   COMPLETED  // Đã hoàn thành
   CANCELLED  // Đã hủy
+}
+
+enum NotificationType {
+  SCHEDULE_CREATED   // Lịch học mới được tạo
+  SCHEDULE_UPDATED   // Lịch học được cập nhật
+  SCHEDULE_CANCELLED // Lịch học bị hủy
+  SESSION_REMINDER   // Nhắc nhở buổi học sắp diễn ra
+  ATTENDANCE_MARKED  // Điểm danh thành công
+  GENERAL            // Thông báo chung
 }

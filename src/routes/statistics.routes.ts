@@ -3,6 +3,8 @@ import {
   getStudentAttendanceStats,
   getClassAttendanceStats,
   getSessionAttendanceStats,
+  getAdminOverview,
+  getWeeklyStats,
 } from '../controllers/statistics.controller';
 
 const router = express.Router();
@@ -146,5 +148,88 @@ router.get('/class/:classId', getClassAttendanceStats);
  *         description: Schedule session not found
  */
 router.get('/session/:scheduleSessionId', getSessionAttendanceStats);
+
+/**
+ * @swagger
+ * /statistics/admin/overview:
+ *   get:
+ *     summary: Get overall statistics for admin dashboard
+ *     tags: [Statistics]
+ *     responses:
+ *       200:
+ *         description: Admin overview statistics
+ *         content:
+ *           application/json:
+ *             example:
+ *               overview:
+ *                 totalClasses: 15
+ *                 totalStudents: 450
+ *                 totalLecturers: 8
+ *                 totalSessions: 120
+ *                 overallAttendanceRate: 85.50
+ *                 overallAbsentRate: 14.50
+ *               details:
+ *                 totalExpectedAttendances: 5400
+ *                 totalActualAttendances: 4617
+ *                 totalMissedAttendances: 783
+ */
+router.get('/admin/overview', getAdminOverview);
+
+/**
+ * @swagger
+ * /statistics/admin/weekly:
+ *   get:
+ *     summary: Get weekly attendance statistics for admin dashboard
+ *     tags: [Statistics]
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *           enum: [current-week, last-week]
+ *         description: Quick select period (current-week = tuần này, last-week = tuần trước). Nếu không dùng period, mặc định lấy 4 tuần gần nhất
+ *         example: "current-week"
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Start date for custom range (bỏ qua nếu dùng period)
+ *         example: "2024-08-01"
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: End date for custom range (bỏ qua nếu dùng period)
+ *         example: "2024-09-01"
+ *     responses:
+ *       200:
+ *         description: Weekly attendance statistics
+ *         content:
+ *           application/json:
+ *             example:
+ *               period:
+ *                 startDate: "2024-08-01T00:00:00.000Z"
+ *                 endDate: "2024-09-01T00:00:00.000Z"
+ *               weeklyStats:
+ *                 - weekStart: "2024-08-05T00:00:00.000Z"
+ *                   weekEnd: "2024-08-11T23:59:59.999Z"
+ *                   totalSessions: 30
+ *                   totalExpected: 1200
+ *                   totalAttended: 1050
+ *                   totalAbsent: 150
+ *                   attendanceRate: 87.50
+ *                   absentRate: 12.50
+ *                 - weekStart: "2024-08-12T00:00:00.000Z"
+ *                   weekEnd: "2024-08-18T23:59:59.999Z"
+ *                   totalSessions: 28
+ *                   totalExpected: 1120
+ *                   totalAttended: 952
+ *                   totalAbsent: 168
+ *                   attendanceRate: 85.00
+ *                   absentRate: 15.00
+ */
+router.get('/admin/weekly', getWeeklyStats);
 
 export default router;

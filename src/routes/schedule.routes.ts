@@ -148,7 +148,7 @@ router.get('/class/:classId', getSchedulesByClass);
  * @swagger
  * /schedules/{scheduleId}/sessions:
  *   get:
- *     summary: Get all sessions for a schedule
+ *     summary: Get schedule information and all sessions
  *     tags: [Schedules]
  *     parameters:
  *       - in: path
@@ -159,33 +159,57 @@ router.get('/class/:classId', getSchedulesByClass);
  *         example: "schedule-uuid-123"
  *     responses:
  *       200:
- *         description: List of schedule sessions
+ *         description: Schedule information with sessions
  *         content:
  *           application/json:
  *             example:
- *               - id: "session-uuid-1"
- *                 scheduleId: "schedule-uuid-123"
- *                 sessionDate: "2024-09-02T00:00:00.000Z"
- *                 sessionName: "Buổi 1"
- *                 status: "COMPLETED"
- *                 note: null
- *                 sessions:
- *                   - id: "attendance-session-uuid"
- *                     startAt: "2024-09-02T07:00:00.000Z"
- *                     endAt: "2024-09-02T09:00:00.000Z"
- *                     _count:
- *                       attendances: 38
+ *               schedule:
+ *                 id: "schedule-uuid-123"
+ *                 classId: "abc-123-def-456"
+ *                 name: "Học kỳ 1 2024-2025"
+ *                 startDate: "2024-09-01T00:00:00.000Z"
+ *                 endDate: "2025-01-15T00:00:00.000Z"
+ *                 daysOfWeek: [1, 3, 5]
+ *                 startTime: "07:00"
+ *                 endTime: "09:00"
+ *                 room: "A101"
+ *                 description: "Lớp Toán Cao Cấp"
  *                 createdAt: "2024-09-01T00:00:00.000Z"
  *                 updatedAt: "2024-09-01T00:00:00.000Z"
- *               - id: "session-uuid-2"
- *                 scheduleId: "schedule-uuid-123"
- *                 sessionDate: "2024-09-04T00:00:00.000Z"
- *                 sessionName: "Buổi 2"
- *                 status: "SCHEDULED"
- *                 note: null
- *                 sessions: []
- *                 createdAt: "2024-09-01T00:00:00.000Z"
- *                 updatedAt: "2024-09-01T00:00:00.000Z"
+ *                 class:
+ *                   id: "abc-123-def-456"
+ *                   name: "Toán Cao Cấp A1"
+ *                   code: "MATH101"
+ *               sessions:
+ *                 - id: "session-uuid-1"
+ *                   scheduleId: "schedule-uuid-123"
+ *                   sessionDate: "2024-09-02T00:00:00.000Z"
+ *                   sessionName: "Buổi 1"
+ *                   status: "COMPLETED"
+ *                   note: null
+ *                   sessions:
+ *                     - id: "attendance-session-uuid"
+ *                       startAt: "2024-09-02T07:00:00.000Z"
+ *                       endAt: "2024-09-02T09:00:00.000Z"
+ *                       _count:
+ *                         attendances: 38
+ *                   createdAt: "2024-09-01T00:00:00.000Z"
+ *                   updatedAt: "2024-09-01T00:00:00.000Z"
+ *                 - id: "session-uuid-2"
+ *                   scheduleId: "schedule-uuid-123"
+ *                   sessionDate: "2024-09-04T00:00:00.000Z"
+ *                   sessionName: "Buổi 2"
+ *                   status: "SCHEDULED"
+ *                   note: null
+ *                   sessions: []
+ *                   createdAt: "2024-09-01T00:00:00.000Z"
+ *                   updatedAt: "2024-09-01T00:00:00.000Z"
+ *       404:
+ *         description: Schedule not found
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: "Schedule not found"
  */
 router.get('/:scheduleId/sessions', getScheduleSessions);
 

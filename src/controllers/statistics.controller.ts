@@ -269,3 +269,254 @@ export const getSessionAttendanceStats = async (req: Request, res: Response) => 
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+/**
+ * Get overall statistics for admin dashboard
+ * GET /api/statistics/admin/overview
+ */
+export const getAdminOverview = async (req: Request, res: Response) => {
+  try {
+    // Total classes
+    const totalClasses = await prisma.class.count();
+
+    // Total students
+    const totalStudents = await prisma.student.count();
+
+    // Total lecturers
+    const totalLecturers = await prisma.user.count({
+      where: { role: 'lecturer' },
+    });
+
+    // Get all schedule sessions
+    const allScheduleSessions = await prisma.scheduleSession.findMany({
+      include: {
+        schedule: {
+          include: {
+            class: {
+              include: {
+                students: true,
+              },
+            },
+          },
+        },
+        sessions: {
+          include: {
+            attendances: true,
+          },
+        },
+      },
+    });
+
+    // Calculate overall attendance statistics
+    let totalSessionsCount = 0;
+    let totalExpectedAttendances = 0;
+    let totalActualAttendances = 0;
+
+    for (const scheduleSession of allScheduleSessions) {
+      const totalStudentsInClass = scheduleSession.schedule.class.students.length;
+      if (totalStudentsInClass > 0) {
+        totalSessionsCount++;
+        totalExpectedAttendances += totalStudentsInClass;
+        
+        const attendedStudentsSet = new Set(
+          scheduleSession.sessions.flatMap((session) =>
+            session.attendances.map((att) => att.studentId)
+          )
+        );
+        totalActualAttendances += attendedStudentsSet.size;
+      }
+    }
+
+    const overallAttendanceRate =
+      totalExpectedAttendances > 0
+        ? ((totalActualAttendances / totalExpectedAttendances) * 100).toFixed(2)
+        : '0.00';
+
+    const overallAbsentRate = (100 - parseFloat(overallAttendanceRate)).toFixed(2);
+
+    res.json({
+      overview: {
+        totalClasses,
+        totalStudents,
+        totalLecturers,
+        totalSessions: totalSessionsCount,
+        overallAttendanceRate: parseFloat(overallAttendanceRate),
+        overallAbsentRate: parseFloat(overallAbsentRate),
+      },
+      details: {
+        totalExpectedAttendances,
+        totalActualAttendances,
+        totalMissedAttendances: totalExpectedAttendances - totalActualAttendances,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get admin overview error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * Get weekly attendance statistics for admin dashboard
+ * GET /api/statistics/admin/weekly
+ */
+export const getWeeklyStats = async (req: Request, res: Response) => {
+  try {
+    const { startDate, endDate, period } = req.query;
+
+    let start: Date;
+    let end: Date = new Date();
+
+    if (period === 'current-week') {
+      // Get current week (Monday to Sunday)
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Monday
+      start = new Date(now.setDate(diff));
+      start.setHours(0, 0, 0, 0);
+      
+      end = new Date(start);
+      end.setDate(end.getDate() + 6); // Sunday
+      end.setHours(23, 59, 59, 999);
+    } else if (period === 'last-week') {
+      // Get last week (Monday to Sunday)
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // This Monday
+      start = new Date(now.setDate(diff - 7)); // Last Monday
+      start.setHours(0, 0, 0, 0);
+      
+      end = new Date(start);
+      end.setDate(end.getDate() + 6); // Last Sunday
+      end.setHours(23, 59, 59, 999);
+    } else if (startDate && endDate) {
+      // Custom date range
+      start = new Date(startDate as string);
+      end = new Date(endDate as string);
+    } else {
+      // Default: last 4 weeks
+      end = new Date();
+      start = new Date(end.getTime() - 28 * 24 * 60 * 60 * 1000); // 4 weeks ago
+    }
+
+    // Get all schedule sessions in the date range
+    const scheduleSessions = await prisma.scheduleSession.findMany({
+      where: {
+        sessionDate: {
+          gte: start,
+          lte: end,
+        },
+      },
+      include: {
+        schedule: {
+          include: {
+            class: {
+              include: {
+                students: true,
+              },
+            },
+          },
+        },
+        sessions: {
+          include: {
+            attendances: true,
+          },
+        },
+      },
+      orderBy: {
+        sessionDate: 'asc',
+      },
+    });
+
+    // Group by week
+    interface WeeklyData {
+      [key: string]: {
+        weekStart: Date;
+        weekEnd: Date;
+        totalSessions: number;
+        totalExpected: number;
+        totalAttended: number;
+        attendanceRate: number;
+        absentRate: number;
+      };
+    }
+
+    const weeklyData: WeeklyData = {};
+
+    for (const scheduleSession of scheduleSessions) {
+      const sessionDate = new Date(scheduleSession.sessionDate);
+      
+      // Get Monday of the week
+      const dayOfWeek = sessionDate.getDay();
+      const diff = sessionDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+      const weekStart = new Date(sessionDate.setDate(diff));
+      weekStart.setHours(0, 0, 0, 0);
+      
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+
+      const weekKey = weekStart.toISOString().split('T')[0];
+
+      if (!weeklyData[weekKey]) {
+        weeklyData[weekKey] = {
+          weekStart,
+          weekEnd,
+          totalSessions: 0,
+          totalExpected: 0,
+          totalAttended: 0,
+          attendanceRate: 0,
+          absentRate: 0,
+        };
+      }
+
+      const totalStudentsInClass = scheduleSession.schedule.class.students.length;
+      
+      if (totalStudentsInClass > 0) {
+        weeklyData[weekKey].totalSessions++;
+        weeklyData[weekKey].totalExpected += totalStudentsInClass;
+
+        const attendedStudentsSet = new Set(
+          scheduleSession.sessions.flatMap((session) =>
+            session.attendances.map((att) => att.studentId)
+          )
+        );
+        
+        weeklyData[weekKey].totalAttended += attendedStudentsSet.size;
+      }
+    }
+
+    // Calculate rates for each week
+    const weeklyStats = Object.entries(weeklyData)
+      .map(([weekKey, data]) => {
+        const attendanceRate =
+          data.totalExpected > 0
+            ? parseFloat(((data.totalAttended / data.totalExpected) * 100).toFixed(2))
+            : 0;
+        const absentRate = parseFloat((100 - attendanceRate).toFixed(2));
+
+        return {
+          weekStart: data.weekStart,
+          weekEnd: data.weekEnd,
+          totalSessions: data.totalSessions,
+          totalExpected: data.totalExpected,
+          totalAttended: data.totalAttended,
+          totalAbsent: data.totalExpected - data.totalAttended,
+          attendanceRate,
+          absentRate,
+        };
+      })
+      .sort((a, b) => a.weekStart.getTime() - b.weekStart.getTime());
+
+    res.json({
+      period: {
+        startDate: start,
+        endDate: end,
+      },
+      weeklyStats,
+    });
+  } catch (error: any) {
+    console.error('Get weekly stats error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+

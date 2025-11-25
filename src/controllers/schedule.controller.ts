@@ -155,6 +155,25 @@ export const getScheduleSessions = async (req: Request, res: Response) => {
   try {
     const { scheduleId } = req.params;
 
+    // Get schedule information
+    const schedule = await prisma.schedule.findUnique({
+      where: { id: scheduleId },
+      include: {
+        class: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
+      },
+    });
+
+    if (!schedule) {
+      return res.status(404).json({ error: 'Schedule not found' });
+    }
+
+    // Get sessions for this schedule
     const sessions = await prisma.scheduleSession.findMany({
       where: { scheduleId },
       include: {
@@ -176,7 +195,10 @@ export const getScheduleSessions = async (req: Request, res: Response) => {
       },
     });
 
-    res.json(sessions);
+    res.json({
+      schedule,
+      sessions,
+    });
   } catch (error: any) {
     console.error('Get schedule sessions error:', error);
     res.status(500).json({ error: 'Internal server error' });

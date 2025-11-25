@@ -6,6 +6,7 @@ import sessionsRoutes from './sessions.routes';
 import attendanceRoutes from './attendance.routes';
 import scheduleRoutes from './schedule.routes';
 import statisticsRoutes from './statistics.routes';
+import notificationRoutes from './notification.routes';
 
 const router = express.Router();
 
@@ -17,5 +18,6 @@ router.use('/sessions', sessionsRoutes);
 router.use('/attendance', attendanceRoutes);
 router.use('/schedules', scheduleRoutes);
 router.use('/statistics', statisticsRoutes);
+router.use('/notifications', notificationRoutes);
 
 export default router;

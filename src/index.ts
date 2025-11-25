@@ -6,6 +6,7 @@ import cors from 'cors';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import apiRoutes from './routes';
+import { startNotificationScheduler } from './services/notification.service';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -91,4 +92,7 @@ app.use((req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📖 API Documentation: http://localhost:${PORT}/api-docs`);
+  
+  // Start notification scheduler
+  startNotificationScheduler();
 });
