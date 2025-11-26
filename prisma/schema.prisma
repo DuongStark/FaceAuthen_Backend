@@ -179,5 +179,6 @@ enum NotificationType {
   SCHEDULE_CANCELLED // Lịch học bị hủy
   SESSION_REMINDER   // Nhắc nhở buổi học sắp diễn ra
   ATTENDANCE_MARKED  // Điểm danh thành công
+  ATTENDANCE_REMINDER // Nhắc nhở điểm danh/bổ sung ảnh
   GENERAL            // Thông báo chung
 }

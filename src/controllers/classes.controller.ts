@@ -71,6 +71,27 @@ export const getClasses = async (req: AuthRequest, res: Response) => {
       classes = await prisma.class.findMany({
         where: { lecturerId: userId },
         include: {
+          lecturer: {
+            select: {
+              displayName: true,
+            },
+          },
+          schedules: {
+            select: {
+              id: true,
+              name: true,
+              room: true,
+              startTime: true,
+              endTime: true,
+              daysOfWeek: true,
+              startDate: true,
+              endDate: true,
+            },
+            orderBy: {
+              createdAt: 'desc',
+            },
+            take: 1, // Get latest schedule
+          },
           _count: {
             select: {
               students: true,
@@ -80,6 +101,16 @@ export const getClasses = async (req: AuthRequest, res: Response) => {
         },
         orderBy: { createdAt: 'desc' },
       });
+
+      // Format response
+      classes = classes.map((cls: any) => ({
+        ...cls,
+        lecturerName: cls.lecturer.displayName,
+        room: cls.schedules[0]?.room || null,
+        startTime: cls.schedules[0]?.startTime || null,
+        endTime: cls.schedules[0]?.endTime || null,
+        latestSchedule: cls.schedules[0] || null,
+      }));
     } else {
       // Student: get classes they belong to
       const studentRecords = await prisma.student.findMany({
@@ -89,6 +120,27 @@ export const getClasses = async (req: AuthRequest, res: Response) => {
         include: {
           class: {
             include: {
+              lecturer: {
+                select: {
+                  displayName: true,
+                },
+              },
+              schedules: {
+                select: {
+                  id: true,
+                  name: true,
+                  room: true,
+                  startTime: true,
+                  endTime: true,
+                  daysOfWeek: true,
+                  startDate: true,
+                  endDate: true,
+                },
+                orderBy: {
+                  createdAt: 'desc',
+                },
+                take: 1,
+              },
               _count: {
                 select: {
                   students: true,
@@ -99,7 +151,15 @@ export const getClasses = async (req: AuthRequest, res: Response) => {
           },
         },
       });
-      classes = studentRecords.map((s) => s.class);
+
+      classes = studentRecords.map((s: any) => ({
+        ...s.class,
+        lecturerName: s.class.lecturer.displayName,
+        room: s.class.schedules[0]?.room || null,
+        startTime: s.class.schedules[0]?.startTime || null,
+        endTime: s.class.schedules[0]?.endTime || null,
+        latestSchedule: s.class.schedules[0] || null,
+      }));
     }
 
     res.json(classes);

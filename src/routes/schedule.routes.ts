@@ -5,6 +5,7 @@ import {
   getScheduleSessions,
   updateScheduleSession,
   deleteSchedule,
+  getMySchedules,
 } from '../controllers/schedule.controller';
 import { requireAuth } from '../middlewares/auth.middleware';
 
@@ -143,6 +144,47 @@ router.post('/create', requireAuth, createSchedule);
  *                 updatedAt: "2024-09-01T00:00:00.000Z"
  */
 router.get('/class/:classId', getSchedulesByClass);
+
+/**
+ * @swagger
+ * /schedules/my-schedules:
+ *   get:
+ *     summary: Get all schedules for current student
+ *     description: Lấy tất cả lịch học từ các lớp mà sinh viên đã tham gia
+ *     tags: [Schedules]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of student's schedules
+ *         content:
+ *           application/json:
+ *             example:
+ *               - id: "schedule-uuid-1"
+ *                 classId: "abc-123-def-456"
+ *                 name: "Học kỳ 1 2024-2025"
+ *                 startDate: "2024-09-01T00:00:00.000Z"
+ *                 endDate: "2025-01-15T00:00:00.000Z"
+ *                 daysOfWeek: [1, 3, 5]
+ *                 startTime: "07:00"
+ *                 endTime: "09:00"
+ *                 room: "A101"
+ *                 description: "Lớp Toán Cao Cấp"
+ *                 class:
+ *                   id: "abc-123-def-456"
+ *                   name: "Toán Cao Cấp A1"
+ *                   code: "MATH101"
+ *                   lecturer:
+ *                     displayName: "Nguyễn Văn A"
+ *                 lecturerName: "Nguyễn Văn A"
+ *                 _count:
+ *                   scheduleSessions: 45
+ *                 createdAt: "2024-09-01T00:00:00.000Z"
+ *                 updatedAt: "2024-09-01T00:00:00.000Z"
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/my-schedules', requireAuth, getMySchedules);
 
 /**
  * @swagger

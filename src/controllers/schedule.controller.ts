@@ -267,3 +267,69 @@ export const deleteSchedule = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+/**
+ * Get all schedules for current student
+ * GET /api/schedules/my-schedules
+ */
+export const getMySchedules = async (req: AuthRequest, res: Response) => {
+  try {
+    const userEmail = req.user?.email;
+
+    if (!userEmail) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Get all classes the student belongs to
+    const studentRecords = await prisma.student.findMany({
+      where: { email: userEmail },
+      select: { classId: true },
+    });
+
+    if (studentRecords.length === 0) {
+      return res.json([]);
+    }
+
+    const classIds = studentRecords.map((s) => s.classId);
+
+    // Get all schedules from these classes
+    const schedules = await prisma.schedule.findMany({
+      where: {
+        classId: { in: classIds },
+      },
+      include: {
+        class: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            lecturer: {
+              select: {
+                displayName: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            scheduleSessions: true,
+          },
+        },
+      },
+      orderBy: {
+        startDate: 'desc',
+      },
+    });
+
+    // Format response with lecturer name
+    const formattedSchedules = schedules.map((schedule: any) => ({
+      ...schedule,
+      lecturerName: schedule.class.lecturer.displayName,
+    }));
+
+    res.json(formattedSchedules);
+  } catch (error: any) {
+    console.error('Get my schedules error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
