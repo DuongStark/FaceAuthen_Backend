@@ -194,3 +194,137 @@ export const getActiveSession = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+/**
+ * Get all sessions for current user
+ * GET /api/sessions/my-sessions
+ */
+export const getMySessions = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.uid;
+    const userEmail = req.user?.email;
+    const userRole = req.user?.role;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    let sessions;
+
+    if (userRole === 'lecturer' || userRole === 'admin') {
+      // Lecturer: get sessions from their classes
+      const classes = await prisma.class.findMany({
+        where: { lecturerId: userId },
+        select: { id: true },
+      });
+
+      const classIds = classes.map((c) => c.id);
+
+      sessions = await prisma.session.findMany({
+        where: {
+          classId: { in: classIds },
+        },
+        include: {
+          class: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              lecturer: {
+                select: {
+                  displayName: true,
+                },
+              },
+            },
+          },
+          scheduleSession: {
+            select: {
+              id: true,
+              sessionName: true,
+              sessionDate: true,
+              status: true,
+            },
+          },
+          _count: {
+            select: {
+              attendances: true,
+            },
+          },
+        },
+        orderBy: {
+          startAt: 'desc',
+        },
+      });
+    } else {
+      // Student: get sessions from classes they belong to
+      const studentRecords = await prisma.student.findMany({
+        where: { email: userEmail },
+        select: { classId: true },
+      });
+
+      if (studentRecords.length === 0) {
+        return res.json([]);
+      }
+
+      const classIds = studentRecords.map((s) => s.classId);
+
+      sessions = await prisma.session.findMany({
+        where: {
+          classId: { in: classIds },
+        },
+        include: {
+          class: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              lecturer: {
+                select: {
+                  displayName: true,
+                },
+              },
+            },
+          },
+          scheduleSession: {
+            select: {
+              id: true,
+              sessionName: true,
+              sessionDate: true,
+              status: true,
+            },
+          },
+          _count: {
+            select: {
+              attendances: true,
+            },
+          },
+        },
+        orderBy: {
+          startAt: 'desc',
+        },
+      });
+    }
+
+    // Format response
+    const formattedSessions = sessions.map((session: any) => ({
+      id: session.id,
+      classId: session.classId,
+      className: session.class.name,
+      classCode: session.class.code,
+      lecturerName: session.class.lecturer.displayName,
+      scheduleSessionId: session.scheduleSessionId,
+      scheduleSession: session.scheduleSession,
+      startAt: session.startAt,
+      endAt: session.endAt,
+      isActive: session.endAt === null,
+      totalAttendances: session._count.attendances,
+      createdBy: session.createdBy,
+      createdAt: session.createdAt,
+    }));
+
+    res.json(formattedSessions);
+  } catch (error: any) {
+    console.error('Get my sessions error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};

@@ -1,5 +1,5 @@
 import express from 'express';
-import { startSession, endSession, getActiveSession } from '../controllers/sessions.controller';
+import { startSession, endSession, getActiveSession, getMySessions } from '../controllers/sessions.controller';
 import { requireAuth, requireLecturer } from '../middlewares/auth.middleware';
 
 const router = express.Router();
@@ -138,5 +138,91 @@ router.post('/:id/end', requireAuth, requireLecturer, endSession);
  *               error: No active session found
  */
 router.get('/active/:classId', getActiveSession);
+
+/**
+ * @swagger
+ * /sessions/my-sessions:
+ *   get:
+ *     summary: Get all sessions for current user (lecturer or student)
+ *     tags: [Sessions]
+ *     security:
+ *       - bearerAuth: []
+ *     description: |
+ *       Returns all sessions related to the current user:
+ *       - **Lecturer/Admin**: Returns sessions from all classes they teach
+ *       - **Student**: Returns sessions from all classes they belong to
+ *     responses:
+ *       200:
+ *         description: List of sessions
+ *         content:
+ *           application/json:
+ *             examples:
+ *               lecturerSessions:
+ *                 summary: Lecturer's sessions
+ *                 value:
+ *                   - id: session-uuid-1
+ *                     classId: class-uuid-123
+ *                     className: Lập Trình Cơ Bản
+ *                     classCode: IT101
+ *                     lecturerName: Giảng Viên Nguyễn Văn A
+ *                     scheduleSessionId: schedule-session-uuid-456
+ *                     scheduleSession:
+ *                       id: schedule-session-uuid-456
+ *                       sessionName: Buổi 5
+ *                       sessionDate: "2024-01-15T00:00:00.000Z"
+ *                       status: COMPLETED
+ *                     startAt: "2024-01-15T07:00:00.000Z"
+ *                     endAt: "2024-01-15T09:00:00.000Z"
+ *                     isActive: false
+ *                     totalAttendances: 38
+ *                     createdBy: lecturer-uuid-abc
+ *                     createdAt: "2024-01-15T07:00:00.000Z"
+ *                   - id: session-uuid-2
+ *                     classId: class-uuid-123
+ *                     className: Lập Trình Cơ Bản
+ *                     classCode: IT101
+ *                     lecturerName: Giảng Viên Nguyễn Văn A
+ *                     scheduleSessionId: null
+ *                     scheduleSession: null
+ *                     startAt: "2024-01-10T07:00:00.000Z"
+ *                     endAt: "2024-01-10T09:00:00.000Z"
+ *                     isActive: false
+ *                     totalAttendances: 35
+ *                     createdBy: lecturer-uuid-abc
+ *                     createdAt: "2024-01-10T07:00:00.000Z"
+ *               studentSessions:
+ *                 summary: Student's sessions
+ *                 value:
+ *                   - id: session-uuid-1
+ *                     classId: class-uuid-123
+ *                     className: Lập Trình Cơ Bản
+ *                     classCode: IT101
+ *                     lecturerName: Giảng Viên Nguyễn Văn A
+ *                     scheduleSessionId: schedule-session-uuid-456
+ *                     scheduleSession:
+ *                       id: schedule-session-uuid-456
+ *                       sessionName: Buổi 5
+ *                       sessionDate: "2024-01-15T00:00:00.000Z"
+ *                       status: COMPLETED
+ *                     startAt: "2024-01-15T07:00:00.000Z"
+ *                     endAt: "2024-01-15T09:00:00.000Z"
+ *                     isActive: false
+ *                     totalAttendances: 38
+ *                     createdBy: lecturer-uuid-abc
+ *                     createdAt: "2024-01-15T07:00:00.000Z"
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: Unauthorized
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: Internal server error
+ */
+router.get('/my-sessions', requireAuth, getMySessions);
 
 export default router;
