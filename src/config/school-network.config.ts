@@ -9,7 +9,8 @@ export const SCHOOL_NETWORK_CONFIG = {
     // localhost IPv6
     // Thêm các IP cụ thể của trường ở đây
     // Ví dụ:
-    '113.190.142.206'
+    '113.190.142.206',
+    '222.252.29.85'
     // '203.162.10.1',
     // '203.162.10.2',
   ],
