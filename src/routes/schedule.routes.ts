@@ -149,36 +149,59 @@ router.get('/class/:classId', getSchedulesByClass);
  * @swagger
  * /schedules/my-schedules:
  *   get:
- *     summary: Get all schedules for current student
- *     description: Lấy tất cả lịch học từ các lớp mà sinh viên đã tham gia
+ *     summary: Get all schedule sessions for current student
+ *     description: Lấy tất cả các buổi học cụ thể từ các lớp mà sinh viên đã tham gia. Nếu có 45 buổi học thì sẽ trả về 45 phần tử, mỗi phần tử có chi tiết thời gian bắt đầu và kết thúc đầy đủ.
  *     tags: [Schedules]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: List of student's schedules
+ *         description: List of all individual sessions for the student
  *         content:
  *           application/json:
  *             example:
- *               - id: "schedule-uuid-1"
- *                 classId: "abc-123-def-456"
- *                 name: "Học kỳ 1 2024-2025"
- *                 startDate: "2024-09-01T00:00:00.000Z"
- *                 endDate: "2025-01-15T00:00:00.000Z"
- *                 daysOfWeek: [1, 3, 5]
- *                 startTime: "07:00"
- *                 endTime: "09:00"
- *                 room: "A101"
- *                 description: "Lớp Toán Cao Cấp"
+ *               - id: "session-uuid-1"
+ *                 sessionName: "Buổi 1"
+ *                 sessionDate: "2024-09-02T00:00:00.000Z"
+ *                 startDateTime: "2024-09-02T07:00:00.000Z"
+ *                 endDateTime: "2024-09-02T09:00:00.000Z"
+ *                 status: "COMPLETED"
+ *                 note: null
  *                 class:
  *                   id: "abc-123-def-456"
  *                   name: "Toán Cao Cấp A1"
  *                   code: "MATH101"
- *                   lecturer:
- *                     displayName: "Nguyễn Văn A"
  *                 lecturerName: "Nguyễn Văn A"
- *                 _count:
- *                   scheduleSessions: 45
+ *                 schedule:
+ *                   id: "schedule-uuid-1"
+ *                   name: "Học kỳ 1 2024-2025"
+ *                   room: "A101"
+ *                   description: "Lớp Toán Cao Cấp"
+ *                 attendanceSession:
+ *                   id: "attendance-session-uuid"
+ *                   actualStartAt: "2024-09-02T07:05:00.000Z"
+ *                   actualEndAt: "2024-09-02T09:10:00.000Z"
+ *                   attendanceCount: 38
+ *                 createdAt: "2024-09-01T00:00:00.000Z"
+ *                 updatedAt: "2024-09-01T00:00:00.000Z"
+ *               - id: "session-uuid-2"
+ *                 sessionName: "Buổi 2"
+ *                 sessionDate: "2024-09-04T00:00:00.000Z"
+ *                 startDateTime: "2024-09-04T07:00:00.000Z"
+ *                 endDateTime: "2024-09-04T09:00:00.000Z"
+ *                 status: "SCHEDULED"
+ *                 note: null
+ *                 class:
+ *                   id: "abc-123-def-456"
+ *                   name: "Toán Cao Cấp A1"
+ *                   code: "MATH101"
+ *                 lecturerName: "Nguyễn Văn A"
+ *                 schedule:
+ *                   id: "schedule-uuid-1"
+ *                   name: "Học kỳ 1 2024-2025"
+ *                   room: "A101"
+ *                   description: "Lớp Toán Cao Cấp"
+ *                 attendanceSession: null
  *                 createdAt: "2024-09-01T00:00:00.000Z"
  *                 updatedAt: "2024-09-01T00:00:00.000Z"
  *       401:
