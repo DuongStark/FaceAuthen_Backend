@@ -47,6 +47,11 @@ export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction)
 export const requireAuth = verifyToken;
 
 /**
+ * Alias cho verifyToken để dễ sử dụng
+ */
+export const authenticate = verifyToken;
+
+/**
  * Middleware để yêu cầu role cụ thể
  */
 export const requireRole = (...allowedRoles: string[]) => {

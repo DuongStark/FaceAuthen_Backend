@@ -8,6 +8,7 @@ import scheduleRoutes from './schedule.routes';
 import statisticsRoutes from './statistics.routes';
 import notificationRoutes from './notification.routes';
 import faceImagesRoutes from './faceImages.routes';
+import ipConfigRoutes from './ipConfig.routes';
 
 const router = express.Router();
 
@@ -20,6 +21,7 @@ router.use('/attendance', attendanceRoutes);
 router.use('/schedules', scheduleRoutes);
 router.use('/statistics', statisticsRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/ip-config', ipConfigRoutes);
 
 // Admin routes
 router.use('/api/admin/face-images', faceImagesRoutes);

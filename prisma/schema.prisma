@@ -197,3 +197,34 @@ model FaceImage {
   @@index([studentId])
   @@map("face_images")
 }
+
+// Cấu hình IP được phép cho điểm danh
+model AllowedIP {
+  id          String      @id @default(uuid())
+  ipAddress   String      @map("ip_address")     // Địa chỉ IP hoặc CIDR range
+  type        IPType      @default(SINGLE)       // SINGLE hoặc RANGE
+  description String?                             // Mô tả (VD: "WiFi tầng 1", "Phòng máy A1")
+  isActive    Boolean     @default(true) @map("is_active")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  @@unique([ipAddress])
+  @@index([isActive])
+  @@map("allowed_ips")
+}
+
+// Cấu hình chung cho IP check
+model IPConfig {
+  id           String   @id @default(uuid())
+  enabled      Boolean  @default(true)           // Bật/tắt kiểm tra IP
+  errorMessage String   @default("Bạn chỉ có thể điểm danh khi sử dụng wifi của trường") @map("error_message")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("ip_config")
+}
+
+enum IPType {
+  SINGLE  // IP đơn lẻ (VD: 192.168.1.1)
+  RANGE   // Dải IP CIDR (VD: 192.168.1.0/24)
+}

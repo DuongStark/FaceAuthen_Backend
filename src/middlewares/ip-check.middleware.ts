@@ -1,11 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { SCHOOL_NETWORK_CONFIG } from '../config/school-network.config';
-
-// Danh sách IP được phép của trường (có thể cấu hình)
-const ALLOWED_IPS = SCHOOL_NETWORK_CONFIG.allowedIps;
-
-// Các dải IP của trường (CIDR notation)
-const ALLOWED_IP_RANGES: string[] = SCHOOL_NETWORK_CONFIG.allowedRanges;
+import prisma from '../lib/prisma';
 
 /**
  * Get client IP from request
@@ -41,25 +35,32 @@ function isIpInRange(ip: string, cidr: string): boolean {
 }
 
 /**
- * Check if IP is allowed
+ * Check if IP is allowed (async - reads from database)
  */
-function isIpAllowed(ip: string): boolean {
+async function isIpAllowed(ip: string): Promise<boolean> {
   // Remove IPv6 prefix if present
   const cleanIp = ip.replace(/^::ffff:/, '');
 
-  // Check exact matches
-  if (ALLOWED_IPS.includes(cleanIp)) {
+  // Get all active allowed IPs from database
+  const allowedIPs = await prisma.allowedIP.findMany({
+    where: { isActive: true },
+  });
+
+  // Check exact matches (SINGLE type)
+  const singleIPs = allowedIPs.filter(ip => ip.type === 'SINGLE');
+  if (singleIPs.some(item => item.ipAddress === cleanIp)) {
     return true;
   }
 
-  // Check IP ranges
-  for (const range of ALLOWED_IP_RANGES) {
+  // Check IP ranges (RANGE type)
+  const rangeIPs = allowedIPs.filter(ip => ip.type === 'RANGE');
+  for (const range of rangeIPs) {
     try {
-      if (isIpInRange(cleanIp, range)) {
+      if (isIpInRange(cleanIp, range.ipAddress)) {
         return true;
       }
     } catch (error) {
-      console.error(`Error checking IP range ${range}:`, error);
+      console.error(`Error checking IP range ${range.ipAddress}:`, error);
     }
   }
 
@@ -67,68 +68,73 @@ function isIpAllowed(ip: string): boolean {
 }
 
 /**
+ * Get IP config from database
+ */
+async function getIPConfig() {
+  let config = await prisma.iPConfig.findFirst();
+  
+  // Return default config if not exists
+  if (!config) {
+    return {
+      enabled: true,
+      errorMessage: 'Bạn chỉ có thể điểm danh khi sử dụng wifi của trường',
+    };
+  }
+
+  return config;
+}
+
+/**
  * Middleware to check if request comes from school network
  */
-export const checkSchoolNetwork = (req: Request, res: Response, next: NextFunction) => {
-  // Kiểm tra nếu tính năng bị tắt
-  if (!SCHOOL_NETWORK_CONFIG.enabled) {
-    console.log('⚠️ IP check DISABLED - allowing all requests');
-    return next();
+export const checkSchoolNetwork = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Get config from database
+    const config = await getIPConfig();
+
+    // Kiểm tra nếu tính năng bị tắt
+    if (!config.enabled) {
+      console.log('⚠️ IP check DISABLED - allowing all requests');
+      return next();
+    }
+
+    const clientIp = getClientIp(req);
+    const cleanIp = clientIp.replace(/^::ffff:/, '');
+    
+    console.log('=== IP CHECK DEBUG ===');
+    console.log('Raw IP:', clientIp);
+    console.log('Clean IP:', cleanIp);
+    console.log('Enabled:', config.enabled);
+    
+    const isAllowed = await isIpAllowed(clientIp);
+    console.log('Is Allowed:', isAllowed);
+    console.log('======================');
+
+    if (!isAllowed) {
+      console.log(`🚫 BLOCKED: IP ${cleanIp} not in allowed list`);
+      return res.status(403).json({
+        error: 'Unauthorized network',
+        message: config.errorMessage,
+        clientIp: cleanIp,
+      });
+    }
+
+    console.log(`✅ ALLOWED: IP ${cleanIp} is in allowed list`);
+    next();
+  } catch (error) {
+    console.error('Error in IP check middleware:', error);
+    // In case of database error, allow the request but log the error
+    console.log('⚠️ IP check ERROR - allowing request due to database error');
+    next();
   }
-
-  const clientIp = getClientIp(req);
-  const cleanIp = clientIp.replace(/^::ffff:/, '');
-  
-  console.log('=== IP CHECK DEBUG ===');
-  console.log('Raw IP:', clientIp);
-  console.log('Clean IP:', cleanIp);
-  console.log('Allowed IPs:', ALLOWED_IPS);
-  console.log('Allowed Ranges:', ALLOWED_IP_RANGES);
-  console.log('Enabled:', SCHOOL_NETWORK_CONFIG.enabled);
-  
-  const isAllowed = isIpAllowed(clientIp);
-  console.log('Is Allowed:', isAllowed);
-  console.log('======================');
-
-  if (!isAllowed) {
-    console.log(`🚫 BLOCKED: IP ${cleanIp} not in allowed list`);
-    return res.status(403).json({
-      error: 'Unauthorized network',
-      message: SCHOOL_NETWORK_CONFIG.errorMessage,
-      clientIp: cleanIp,
-    });
-  }
-
-  console.log(`✅ ALLOWED: IP ${cleanIp} is in allowed list`);
-  next();
 };
 
 /**
- * Export configuration for external updates
+ * Export helper functions for external use
  */
-export const ipConfig = {
-  getAllowedIps: () => ALLOWED_IPS,
-  getAllowedRanges: () => ALLOWED_IP_RANGES,
-  addAllowedIp: (ip: string) => {
-    if (!ALLOWED_IPS.includes(ip)) {
-      ALLOWED_IPS.push(ip);
-    }
-  },
-  addAllowedRange: (range: string) => {
-    if (!ALLOWED_IP_RANGES.includes(range)) {
-      ALLOWED_IP_RANGES.push(range);
-    }
-  },
-  removeAllowedIp: (ip: string) => {
-    const index = ALLOWED_IPS.indexOf(ip);
-    if (index > -1) {
-      ALLOWED_IPS.splice(index, 1);
-    }
-  },
-  removeAllowedRange: (range: string) => {
-    const index = ALLOWED_IP_RANGES.indexOf(range);
-    if (index > -1) {
-      ALLOWED_IP_RANGES.splice(index, 1);
-    }
-  },
+export const ipCheckHelpers = {
+  getClientIp,
+  isIpInRange,
+  isIpAllowed,
+  getIPConfig,
 };
