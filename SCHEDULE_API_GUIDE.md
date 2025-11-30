@@ -89,80 +89,7 @@ GET /api/schedules/class/:classId
 ]
 ```
 
-#### 3. Lấy Tất Cả Buổi Học Của Sinh Viên
-```http
-GET /api/schedules/my-schedules
-Authorization: Bearer <token>
-```
-
-**Mô tả:** API này trả về **tất cả các buổi học cụ thể** của sinh viên. Nếu có 45 buổi học thì sẽ có 45 phần tử trong mảng. Mỗi phần tử có thông tin chi tiết về thời gian bắt đầu và kết thúc theo ngày giờ cụ thể.
-
-**Response:**
-```json
-[
-  {
-    "id": "session-uuid-1",
-    "sessionName": "Buổi 1",
-    "sessionDate": "2024-09-02T00:00:00.000Z",
-    "startDateTime": "2024-09-02T07:00:00.000Z",
-    "endDateTime": "2024-09-02T09:00:00.000Z",
-    "status": "COMPLETED",
-    "note": null,
-    "class": {
-      "id": "abc-123-def-456",
-      "name": "Toán Cao Cấp A1",
-      "code": "MATH101"
-    },
-    "lecturerName": "Nguyễn Văn A",
-    "schedule": {
-      "id": "schedule-uuid-1",
-      "name": "Học kỳ 1 2024-2025",
-      "room": "A101",
-      "description": "Lớp Toán Cao Cấp"
-    },
-    "attendanceSession": {
-      "id": "attendance-session-uuid",
-      "actualStartAt": "2024-09-02T07:05:00.000Z",
-      "actualEndAt": "2024-09-02T09:10:00.000Z",
-      "attendanceCount": 38
-    },
-    "createdAt": "2024-09-01T00:00:00.000Z",
-    "updatedAt": "2024-09-01T00:00:00.000Z"
-  },
-  {
-    "id": "session-uuid-2",
-    "sessionName": "Buổi 2",
-    "sessionDate": "2024-09-04T00:00:00.000Z",
-    "startDateTime": "2024-09-04T07:00:00.000Z",
-    "endDateTime": "2024-09-04T09:00:00.000Z",
-    "status": "SCHEDULED",
-    "note": null,
-    "class": {
-      "id": "abc-123-def-456",
-      "name": "Toán Cao Cấp A1",
-      "code": "MATH101"
-    },
-    "lecturerName": "Nguyễn Văn A",
-    "schedule": {
-      "id": "schedule-uuid-1",
-      "name": "Học kỳ 1 2024-2025",
-      "room": "A101",
-      "description": "Lớp Toán Cao Cấp"
-    },
-    "attendanceSession": null,
-    "createdAt": "2024-09-01T00:00:00.000Z",
-    "updatedAt": "2024-09-01T00:00:00.000Z"
-  }
-]
-```
-
-**Lưu ý:**
-- `startDateTime` và `endDateTime`: Thời gian chính xác của buổi học (ngày + giờ)
-- `status`: Trạng thái buổi học (SCHEDULED/COMPLETED/CANCELLED)
-- `attendanceSession`: Thông tin điểm danh thực tế (null nếu chưa mở điểm danh)
-- API sẽ trả về **tất cả buổi học** từ các lớp mà sinh viên tham gia, sắp xếp theo thời gian tăng dần
-
-#### 4. Lấy Danh Sách Buổi Học Của Một Lịch
+#### 3. Lấy Danh Sách Buổi Học
 ```http
 GET /api/schedules/:scheduleId/sessions
 ```
@@ -196,7 +123,7 @@ GET /api/schedules/:scheduleId/sessions
 ]
 ```
 
-#### 5. Cập Nhật Trạng Thái Buổi Học
+#### 4. Cập Nhật Trạng Thái Buổi Học
 ```http
 PATCH /api/schedules/sessions/:sessionId
 Authorization: Bearer <token>
@@ -208,7 +135,7 @@ Content-Type: application/json
 }
 ```
 
-#### 6. Xóa Lịch Học
+#### 5. Xóa Lịch Học
 ```http
 DELETE /api/schedules/:scheduleId
 Authorization: Bearer <token>

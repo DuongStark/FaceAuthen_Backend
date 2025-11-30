@@ -52,6 +52,7 @@ model Student {
   updatedAt DateTime @updatedAt @map("updated_at")
   faceDescriptors FaceDescriptor[]
   attendances     Attendance[]
+  faceImage       FaceImage?
 
   @@unique([classId, studentId])
   @@index([classId])
@@ -181,4 +182,18 @@ enum NotificationType {
   ATTENDANCE_MARKED  // Điểm danh thành công
   ATTENDANCE_REMINDER // Nhắc nhở điểm danh/bổ sung ảnh
   GENERAL            // Thông báo chung
+}
+
+// Ảnh khuôn mặt sinh viên (lưu trên Cloudinary)
+model FaceImage {
+  id          String   @id @default(uuid())
+  studentId   String   @unique @map("student_id")  // 1 student chỉ có 1 ảnh
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  imageUrl    String   @map("image_url")           // URL ảnh từ Cloudinary
+  publicId    String   @map("public_id")           // Cloudinary public_id để xóa ảnh
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([studentId])
+  @@map("face_images")
 }
