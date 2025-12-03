@@ -9,6 +9,7 @@ import statisticsRoutes from './statistics.routes';
 import notificationRoutes from './notification.routes';
 import faceImagesRoutes from './faceImages.routes';
 import ipConfigRoutes from './ipConfig.routes';
+import studentsRoutes from './students.routes';
 
 const router = express.Router();
 
@@ -22,6 +23,7 @@ router.use('/schedules', scheduleRoutes);
 router.use('/statistics', statisticsRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/ip-config', ipConfigRoutes);
+router.use('/students', studentsRoutes);
 
 // Admin routes
 router.use('/api/admin/face-images', faceImagesRoutes);
