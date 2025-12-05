@@ -317,3 +317,237 @@ export const createNotificationForClass = async (req: AuthRequest, res: Response
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+/**
+ * Get sent notifications by lecturer (grouped by notification content)
+ * GET /api/notifications/sent
+ * Returns unique notifications sent, not per-recipient
+ */
+export const getSentNotifications = async (req: AuthRequest, res: Response) => {
+  try {
+    const currentUserRole = req.user?.role;
+    const currentUserId = req.user?.uid;
+
+    if (currentUserRole !== 'admin' && currentUserRole !== 'lecturer') {
+      return res.status(403).json({ error: 'Only admin or lecturer can view sent notifications' });
+    }
+
+    const { page = '1', limit = '20', classId, type } = req.query;
+    const pageNum = parseInt(page as string) || 1;
+    const limitNum = parseInt(limit as string) || 20;
+    const skip = (pageNum - 1) * limitNum;
+
+    // Get classes owned by this lecturer
+    const lecturerClasses = await prisma.class.findMany({
+      where: { lecturerId: currentUserId },
+      select: { id: true, name: true },
+    });
+
+    const classIds = lecturerClasses.map(c => c.id);
+
+    if (classIds.length === 0) {
+      return res.json({
+        notifications: [],
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: 0,
+          totalPages: 0,
+        },
+      });
+    }
+
+    // Get students in lecturer's classes  
+    let targetClassIds = classIds;
+    if (classId) {
+      // Verify classId belongs to lecturer
+      if (!classIds.includes(classId as string)) {
+        return res.status(403).json({ error: 'Class not found or unauthorized' });
+      }
+      targetClassIds = [classId as string];
+    }
+
+    const studentsInClasses = await prisma.student.findMany({
+      where: { classId: { in: targetClassIds } },
+      select: { email: true, classId: true },
+    });
+
+    const studentEmails = studentsInClasses.map(s => s.email);
+
+    // Get user IDs of these students
+    const studentUsers = await prisma.user.findMany({
+      where: { email: { in: studentEmails } },
+      select: { uid: true },
+    });
+
+    const studentUserIds = studentUsers.map(u => u.uid);
+
+    if (studentUserIds.length === 0) {
+      return res.json({
+        notifications: [],
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: 0,
+          totalPages: 0,
+        },
+      });
+    }
+
+    // Build where clause
+    const where: any = {
+      userId: { in: studentUserIds },
+    };
+
+    if (type) {
+      where.type = type;
+    }
+
+    // Get all notifications grouped by content (type, title, message, createdAt within 1 second)
+    const allNotifications = await prisma.notification.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        type: true,
+        title: true,
+        message: true,
+        createdAt: true,
+        isRead: true,
+      },
+    });
+
+    // Group notifications by content (same type, title, message sent at same time = same notification)
+    const groupedMap = new Map<string, {
+      type: string;
+      title: string;
+      message: string;
+      createdAt: Date;
+      recipientCount: number;
+      readCount: number;
+    }>();
+
+    allNotifications.forEach(notif => {
+      // Round to second to group notifications sent at the same time
+      const timeKey = new Date(notif.createdAt).toISOString().slice(0, 19);
+      const key = `${notif.type}|${notif.title}|${notif.message}|${timeKey}`;
+      
+      if (groupedMap.has(key)) {
+        const existing = groupedMap.get(key)!;
+        existing.recipientCount++;
+        if (notif.isRead) existing.readCount++;
+      } else {
+        groupedMap.set(key, {
+          type: notif.type,
+          title: notif.title,
+          message: notif.message,
+          createdAt: notif.createdAt,
+          recipientCount: 1,
+          readCount: notif.isRead ? 1 : 0,
+        });
+      }
+    });
+
+    // Convert to array and sort by createdAt desc
+    const groupedNotifications = Array.from(groupedMap.values())
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    const total = groupedNotifications.length;
+    const paginatedNotifications = groupedNotifications.slice(skip, skip + limitNum);
+
+    res.json({
+      notifications: paginatedNotifications.map(notif => ({
+        type: notif.type,
+        title: notif.title,
+        message: notif.message,
+        createdAt: notif.createdAt,
+        recipientCount: notif.recipientCount,
+        readCount: notif.readCount,
+        readRate: Math.round((notif.readCount / notif.recipientCount) * 100),
+      })),
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+      },
+    });
+  } catch (error: any) {
+    console.error('Get sent notifications error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * Get notification statistics for lecturer
+ * GET /api/notifications/stats
+ */
+export const getNotificationStats = async (req: AuthRequest, res: Response) => {
+  try {
+    const currentUserRole = req.user?.role;
+    const currentUserId = req.user?.uid;
+
+    if (currentUserRole !== 'admin' && currentUserRole !== 'lecturer') {
+      return res.status(403).json({ error: 'Only admin or lecturer can view notification stats' });
+    }
+
+    // Get classes owned by this lecturer
+    const lecturerClasses = await prisma.class.findMany({
+      where: { lecturerId: currentUserId },
+      select: { id: true, name: true },
+    });
+
+    const classIds = lecturerClasses.map(c => c.id);
+
+    // Get students in lecturer's classes
+    const studentsInClasses = await prisma.student.findMany({
+      where: { classId: { in: classIds } },
+      select: { email: true, classId: true },
+    });
+
+    const studentEmails = studentsInClasses.map(s => s.email);
+
+    // Get user IDs of these students
+    const studentUsers = await prisma.user.findMany({
+      where: { email: { in: studentEmails } },
+      select: { uid: true },
+    });
+
+    const studentUserIds = studentUsers.map(u => u.uid);
+
+    // Get notification counts
+    const [totalSent, totalRead, totalUnread, byType] = await Promise.all([
+      prisma.notification.count({
+        where: { userId: { in: studentUserIds } },
+      }),
+      prisma.notification.count({
+        where: { userId: { in: studentUserIds }, isRead: true },
+      }),
+      prisma.notification.count({
+        where: { userId: { in: studentUserIds }, isRead: false },
+      }),
+      prisma.notification.groupBy({
+        by: ['type'],
+        where: { userId: { in: studentUserIds } },
+        _count: { type: true },
+      }),
+    ]);
+
+    res.json({
+      stats: {
+        totalSent,
+        totalRead,
+        totalUnread,
+        readRate: totalSent > 0 ? Math.round((totalRead / totalSent) * 100) : 0,
+        byType: byType.map(item => ({
+          type: item.type,
+          count: item._count.type,
+        })),
+        classCount: lecturerClasses.length,
+        studentCount: studentsInClasses.length,
+      },
+    });
+  } catch (error: any) {
+    console.error('Get notification stats error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};

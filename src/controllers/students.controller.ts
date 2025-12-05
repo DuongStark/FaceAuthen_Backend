@@ -115,6 +115,8 @@ export const getAllStudents = async (req: AuthRequest, res: Response) => {
 /**
  * Get students by class ID
  * GET /students/class/:classId
+ * - Lecturer/Admin: xem tất cả sinh viên trong lớp
+ * - Student: chỉ xem được nếu mình thuộc lớp đó
  */
 export const getStudentsByClassId = async (req: AuthRequest, res: Response) => {
   try {
@@ -123,6 +125,8 @@ export const getStudentsByClassId = async (req: AuthRequest, res: Response) => {
     const pageNum = parseInt(page as string, 10);
     const limitNum = parseInt(limit as string, 10);
     const skip = (pageNum - 1) * limitNum;
+    const currentUserRole = req.user?.role;
+    const currentUserEmail = req.user?.email;
 
     // Check if class exists
     const classData = await prisma.class.findUnique({
@@ -140,6 +144,20 @@ export const getStudentsByClassId = async (req: AuthRequest, res: Response) => {
 
     if (!classData) {
       return res.status(404).json({ error: 'Class not found' });
+    }
+
+    // If student, check if they belong to this class
+    if (currentUserRole === 'student') {
+      const studentInClass = await prisma.student.findFirst({
+        where: {
+          classId,
+          email: currentUserEmail,
+        },
+      });
+
+      if (!studentInClass) {
+        return res.status(403).json({ error: 'You can only view students in your own class' });
+      }
     }
 
     // Build where clause
@@ -212,10 +230,14 @@ export const getStudentsByClassId = async (req: AuthRequest, res: Response) => {
 /**
  * Get student by UUID (internal ID)
  * GET /students/:id
+ * - Lecturer/Admin: xem bất kỳ sinh viên nào
+ * - Student: chỉ xem được thông tin của chính mình
  */
 export const getStudentById = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const currentUserRole = req.user?.role;
+    const currentUserEmail = req.user?.email;
 
     const student = await prisma.student.findUnique({
       where: { id },
@@ -224,6 +246,11 @@ export const getStudentById = async (req: AuthRequest, res: Response) => {
 
     if (!student) {
       return res.status(404).json({ error: 'Student not found' });
+    }
+
+    // If student, check if they are viewing their own info
+    if (currentUserRole === 'student' && student.email !== currentUserEmail) {
+      return res.status(403).json({ error: 'You can only view your own information' });
     }
 
     res.json({

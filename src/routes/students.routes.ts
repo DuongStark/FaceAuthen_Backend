@@ -177,6 +177,9 @@ router.get('/', requireAuth, requireLecturer, getAllStudents);
  * /students/class/{classId}:
  *   get:
  *     summary: Lấy danh sách sinh viên theo lớp học
+ *     description: |
+ *       - **Lecturer/Admin**: Xem tất cả sinh viên trong bất kỳ lớp nào
+ *       - **Student**: Chỉ xem được danh sách sinh viên trong lớp của mình
  *     tags: [Students]
  *     security:
  *       - bearerAuth: []
@@ -285,9 +288,9 @@ router.get('/', requireAuth, requireLecturer, getAllStudents);
  *       401:
  *         description: Unauthorized
  *       403:
- *         description: Forbidden - Chỉ lecturer/admin mới có quyền
+ *         description: Forbidden - Student chỉ xem được lớp của mình
  */
-router.get('/class/:classId', requireAuth, requireLecturer, getStudentsByClassId);
+router.get('/class/:classId', requireAuth, getStudentsByClassId);
 
 /**
  * @swagger
@@ -360,6 +363,9 @@ router.get('/class/:classId/student/:studentId', requireAuth, requireLecturer, g
  * /students/{id}:
  *   get:
  *     summary: Lấy thông tin sinh viên theo UUID
+ *     description: |
+ *       - **Lecturer/Admin**: Xem thông tin của bất kỳ sinh viên nào
+ *       - **Student**: Chỉ xem được thông tin của chính mình (dựa trên email)
  *     tags: [Students]
  *     security:
  *       - bearerAuth: []
@@ -411,9 +417,9 @@ router.get('/class/:classId/student/:studentId', requireAuth, requireLecturer, g
  *       401:
  *         description: Unauthorized
  *       403:
- *         description: Forbidden - Chỉ lecturer/admin mới có quyền
+ *         description: Forbidden - Student chỉ xem được thông tin của chính mình
  */
-router.get('/:id', requireAuth, requireLecturer, getStudentById);
+router.get('/:id', requireAuth, getStudentById);
 
 export default router;
 

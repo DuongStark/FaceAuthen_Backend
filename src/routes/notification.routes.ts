@@ -6,6 +6,8 @@ import {
   deleteNotification,
   createNotificationForStudent,
   createNotificationForClass,
+  getSentNotifications,
+  getNotificationStats,
 } from '../controllers/notification.controller';
 import { requireAuth } from '../middlewares/auth.middleware';
 
@@ -250,5 +252,104 @@ router.post('/create-for-student', requireAuth, createNotificationForStudent);
  *         description: Class not found
  */
 router.post('/create-for-class', requireAuth, createNotificationForClass);
+
+/**
+ * @swagger
+ * /notifications/sent:
+ *   get:
+ *     summary: Xem danh sách thông báo đã gửi (grouped by content)
+ *     description: |
+ *       Trả về danh sách các thông báo mà giảng viên đã gửi, gộp theo nội dung.
+ *       Mỗi item là một thông báo unique (cùng type, title, message, thời gian gửi).
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Number of items per page
+ *       - in: query
+ *         name: classId
+ *         schema:
+ *           type: string
+ *         description: Filter by class ID
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [SCHEDULE_CREATED, SCHEDULE_UPDATED, SCHEDULE_CANCELLED, SESSION_REMINDER, ATTENDANCE_MARKED, ATTENDANCE_REMINDER, GENERAL]
+ *         description: Filter by notification type
+ *     responses:
+ *       200:
+ *         description: List of sent notifications (grouped)
+ *         content:
+ *           application/json:
+ *             example:
+ *               notifications:
+ *                 - type: "GENERAL"
+ *                   title: "Thông báo chung"
+ *                   message: "Nhắc nhở nộp bài tập"
+ *                   createdAt: "2024-11-25T10:00:00.000Z"
+ *                   recipientCount: 40
+ *                   readCount: 35
+ *                   readRate: 88
+ *                 - type: "SCHEDULE_CREATED"
+ *                   title: "Lịch học mới"
+ *                   message: "Lịch học kỳ 2 đã được tạo"
+ *                   createdAt: "2024-11-24T08:00:00.000Z"
+ *                   recipientCount: 40
+ *                   readCount: 40
+ *                   readRate: 100
+ *               pagination:
+ *                 page: 1
+ *                 limit: 20
+ *                 total: 5
+ *                 totalPages: 1
+ *       403:
+ *         description: Only lecturer/admin can view sent notifications
+ */
+router.get('/sent', requireAuth, getSentNotifications);
+
+/**
+ * @swagger
+ * /notifications/stats:
+ *   get:
+ *     summary: Get notification statistics for lecturer
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Notification statistics
+ *         content:
+ *           application/json:
+ *             example:
+ *               stats:
+ *                 totalSent: 150
+ *                 totalRead: 120
+ *                 totalUnread: 30
+ *                 readRate: 80
+ *                 byType:
+ *                   - type: "GENERAL"
+ *                     count: 50
+ *                   - type: "SCHEDULE_CREATED"
+ *                     count: 40
+ *                   - type: "ATTENDANCE_REMINDER"
+ *                     count: 60
+ *                 classCount: 3
+ *                 studentCount: 120
+ *       403:
+ *         description: Only lecturer/admin can view notification stats
+ */
+router.get('/stats', requireAuth, getNotificationStats);
 
 export default router;
