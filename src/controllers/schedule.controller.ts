@@ -269,8 +269,9 @@ export const deleteSchedule = async (req: AuthRequest, res: Response) => {
 };
 
 /**
- * Get all schedules for current student
+ * Get all schedule sessions for current student
  * GET /api/schedules/my-schedules
+ * Returns all individual sessions (e.g., 45 elements for 45 sessions) with detailed start/end times
  */
 export const getMySchedules = async (req: AuthRequest, res: Response) => {
   try {
@@ -292,42 +293,100 @@ export const getMySchedules = async (req: AuthRequest, res: Response) => {
 
     const classIds = studentRecords.map((s) => s.classId);
 
-    // Get all schedules from these classes
-    const schedules = await prisma.schedule.findMany({
+    // Get all schedule sessions from these classes
+    const scheduleSessions = await prisma.scheduleSession.findMany({
       where: {
-        classId: { in: classIds },
+        schedule: {
+          classId: { in: classIds },
+        },
       },
       include: {
-        class: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-            lecturer: {
+        schedule: {
+          include: {
+            class: {
               select: {
-                displayName: true,
+                id: true,
+                name: true,
+                code: true,
+                lecturer: {
+                  select: {
+                    displayName: true,
+                  },
+                },
               },
             },
           },
         },
-        _count: {
+        sessions: {
           select: {
-            scheduleSessions: true,
+            id: true,
+            startAt: true,
+            endAt: true,
+            _count: {
+              select: {
+                attendances: true,
+              },
+            },
           },
         },
       },
       orderBy: {
-        startDate: 'desc',
+        sessionDate: 'asc',
       },
     });
 
-    // Format response with lecturer name
-    const formattedSchedules = schedules.map((schedule: any) => ({
-      ...schedule,
-      lecturerName: schedule.class.lecturer.displayName,
-    }));
+    // Format response with detailed date-time information
+    const formattedSessions = scheduleSessions.map((session: any) => {
+      // Combine sessionDate with startTime and endTime from schedule
+      // Get the date components from sessionDate (in UTC)
+      const sessionDate = new Date(session.sessionDate);
+      const year = sessionDate.getUTCFullYear();
+      const month = sessionDate.getUTCMonth();
+      const day = sessionDate.getUTCDate();
+      
+      const [startHour, startMinute] = session.schedule.startTime.split(':');
+      const [endHour, endMinute] = session.schedule.endTime.split(':');
+      
+      // Create datetime with UTC date + schedule time
+      const startDateTime = new Date(Date.UTC(year, month, day, parseInt(startHour), parseInt(startMinute), 0, 0));
+      const endDateTime = new Date(Date.UTC(year, month, day, parseInt(endHour), parseInt(endMinute), 0, 0));
 
-    res.json(formattedSchedules);
+      return {
+        id: session.id,
+        sessionName: session.sessionName,
+        sessionDate: session.sessionDate,
+        startDateTime: startDateTime.toISOString(),
+        endDateTime: endDateTime.toISOString(),
+        status: session.status,
+        note: session.note,
+        // Class information
+        class: {
+          id: session.schedule.class.id,
+          name: session.schedule.class.name,
+          code: session.schedule.class.code,
+        },
+        // Lecturer information
+        lecturerName: session.schedule.class.lecturer.displayName,
+        // Schedule information
+        schedule: {
+          id: session.schedule.id,
+          name: session.schedule.name,
+          room: session.schedule.room,
+          description: session.schedule.description,
+        },
+        // Attendance information (if session was opened for attendance)
+        attendanceSession: session.sessions.length > 0 ? {
+          id: session.sessions[0].id,
+          actualStartAt: session.sessions[0].startAt,
+          actualEndAt: session.sessions[0].endAt,
+          attendanceCount: session.sessions[0]._count.attendances,
+        } : null,
+        createdAt: session.createdAt,
+        updatedAt: session.updatedAt,
+      };
+    });
+
+    res.json(formattedSessions);
   } catch (error: any) {
     console.error('Get my schedules error:', error);
     res.status(500).json({ error: 'Internal server error' });
